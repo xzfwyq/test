@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Z ❤️ W</title>
+    <style>
+        :root {
+            --gold: #D4AF37;
+            --rose-gold: #B76E79;
+            --dark-bg: #050509;
+            --text-light: #F5F5F5;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Songti SC', 'SimSun', serif;
+            background-color: var(--dark-bg);
+            color: var(--text-light);
+            overflow-x: hidden;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        #starfield {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: -1;
+        }
+
+        .main-container {
+            z-index: 1;
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 80px;
+        }
+
+        /* ===== 左侧：图腾与计时器 ===== */
+        .left-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            min-width: 400px;
+        }
+
+        .totem {
+            position: relative;
+            margin-bottom: 25px;
+        }
+
+        .totem-zw {
+            font-size: 3.5rem;
+            font-weight: bold;
+            background: linear-gradient(45deg, var(--gold), var(--rose-gold), var(--gold));
+            background-size: 400px 400px;
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            animation: shimmer 3s infinite linear;
+            letter-spacing: 4px;
+            font-family: sans-serif;
+            text-align: center;
+            line-height: 1.2;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -200px center; }
+            100% { background-position: 200px center; }
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: var(--rose-gold);
+            letter-spacing: 3px;
+            font-family: sans-serif;
+            margin-bottom: 50px;
+            opacity: 0.9;
+            font-weight: 300;
+        }
+
+        /* 计时器样式 */
+        .timer-box {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: 20px;
+            padding: 40px 50px;
+            box-shadow: 0 0 50px rgba(212, 175, 55, 0.15);
+            width: 100%;
+            margin-bottom: 30px;
+        }
+
+        .timer-title {
+            font-size: 1.4rem;
+            margin-bottom: 25px;
+            color: var(--gold);
+            letter-spacing: 3px;
+            font-family: sans-serif;
+        }
+
+        .time-display {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            font-size: 3.5rem;
+            font-weight: bold;
+            font-family: sans-serif;
+        }
+
+        .time-unit { display: flex; flex-direction: column; align-items: center; min-width: 70px; }
+        .time-unit span:first-child { color: #fff; text-shadow: 0 0 20px var(--rose-gold); }
+        .time-unit span:last-child { font-size: 0.9rem; color: #aaa; margin-top: 5px; font-weight: normal; letter-spacing: 2px; }
+
+        .love-timer-box {
+            margin-top: 30px;
+            padding-top: 25px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .love-timer-title { font-size: 1rem; color: rgba(255, 255, 255, 0.6); margin-bottom: 12px; font-family: sans-serif; letter-spacing: 1px; }
+        .love-time-display { display: flex; justify-content: center; gap: 15px; font-size: 1.6rem; color: var(--rose-gold); font-weight: bold; font-family: sans-serif; }
+        .love-time-unit { display: flex; flex-direction: column; align-items: center; }
+        .love-time-unit span:last-child { font-size: 0.7rem; color: rgba(255, 255, 255, 0.4); margin-top: 3px; }
+
+        .progress-section { width: 100%; margin-top: 30px; }
+        .progress-bar-bg { height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; }
+        .progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--rose-gold), var(--gold)); width: 0%; transition: width 1s ease-in-out; border-radius: 3px; }
+        .progress-text { margin-top: 10px; font-size: 0.9rem; color: #888; font-family: sans-serif; letter-spacing: 1px; }
+
+        /* ===== 右侧：诗词时间轴 ===== */
+        .right-panel {
+            flex: 1;
+            min-width: 400px;
+            /* 诗词整块在右半栏内水平居中，与左栏内容保持对称 */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* 诗词块的定位基准：宽度收缩到最宽的一行诗，竖线/圆点都相对它摆放 */
+        .poem-wrap {
+            position: relative;
+            width: fit-content;
+        }
+
+        .timeline-line {
+            position: absolute;
+            left: -32px; /* 圆心对准线：竖线宽2px，中心在 -31px */
+            top: 0;
+            width: 2px;
+            background: rgba(255, 255, 255, 0.1);
+            height: 0; /* 初始高度为0，由JS随已打出诗行逐行生长 */
+            transition: top 1s ease-in-out, height 1s ease-in-out;
+        }
+
+        .chapter-card {
+            position: relative;
+            margin-bottom: 80px;
+            text-align: left;
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+        }
+
+        .chapter-card.visible { opacity: 1; }
+
+        .timeline-dot {
+            position: absolute;
+            left: -38px; /* 圆心对准竖线中心：-32 + 半线宽1px - 半径7px = -38 */
+            top: 8px;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--dark-bg);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            transition: all 1s ease-in-out;
+        }
+
+        .chapter-card.active .timeline-dot {
+            border-color: var(--gold);
+            box-shadow: 0 0 15px var(--gold);
+            background: var(--gold);
+        }
+
+        .chapter-title {
+            font-size: 1.4rem;
+            color: var(--gold);
+            margin-bottom: 20px;
+            letter-spacing: 8px;
+            font-family: sans-serif;
+            font-weight: 300;
+        }
+
+        .typewriter-text {
+            font-size: 1.2rem;
+            line-height: 2.4;
+            color: rgba(255, 255, 255, 0.9);
+            letter-spacing: 2px;
+            min-height: 80px;
+        }
+
+        /* 光标样式 */
+        .cursor-char {
+            display: inline-block;
+            width: 2px;
+            height: 1.1em;
+            background: var(--rose-gold);
+            margin-left: 2px;
+            animation: blink 1s infinite step-end;
+            vertical-align: text-bottom;
+        }
+
+        /* 打字时补齐当前行宽度的透明占位，保证居中排版不抖动 */
+        .tw-pad {
+            visibility: hidden;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        /* ===== 响应式适配 (仅影响手机端) ===== */
+        @media (max-width: 768px) {
+            .main-container {
+                flex-direction: column;
+                gap: 50px;
+                padding: 0 15px;
+                max-width: 100%;
+            }
+
+            .left-panel, .right-panel {
+                width: 100%;
+                min-width: auto;
+            }
+
+            .right-panel {
+                justify-content: flex-start;
+                align-items: center;
+            }
+
+            /* 手机端隐藏时间轴装饰，诗词整体居中展示，与上方计时区对称 */
+            .timeline-line,
+            .timeline-dot {
+                display: none;
+            }
+
+            .chapter-title,
+            .typewriter-text {
+                text-align: center;
+            }
+
+            .totem-zw {
+                font-size: 2.5rem;
+            }
+
+            .subtitle {
+                font-size: 1rem;
+                margin-bottom: 30px;
+            }
+
+            .timer-box {
+                padding: 25px 20px;
+            }
+
+            .timer-title {
+                font-size: 1.1rem;
+            }
+
+            .time-display {
+                font-size: 2.2rem;
+                gap: 15px;
+            }
+
+            .love-time-display {
+                font-size: 1.2rem;
+            }
+
+            .chapter-title {
+                font-size: 1.2rem;
+            }
+
+            .typewriter-text {
+                font-size: 1rem;
+                line-height: 2;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="starfield"></canvas>
+
+    <div class="main-container">
+        <!-- 左侧面板 -->
+        <div class="left-panel">
+            <!-- 去掉印章效果的图腾 -->
+            <div class="totem">
+                <div class="totem-zw">琢玉郎 ❤️ 点酥娘</div>
+            </div>
+            <div class="subtitle">Dear Little Fan, I love you three thousand.</div>
+
+            <!-- 计时器 -->
+            <div class="timer-box">
+                <div class="timer-title" id="marryTitle">🤵 我们已携手步入婚姻 👰</div>
+                <div class="time-display" id="marriedTimer">
+                    <div class="time-unit"><span id="m-days">0</span><span>天</span></div>
+                    <div class="time-unit"><span id="m-hours">0</span><span>时</span></div>
+                    <div class="time-unit"><span id="m-minutes">0</span><span>分</span></div>
+                    <div class="time-unit"><span id="m-seconds">0</span><span>秒</span></div>
+                </div>
+                <div class="love-timer-box">
+                    <div class="love-timer-title">从初见至成婚，我们已相爱</div>
+                    <div class="love-time-display" id="loveTimer">
+                        <div class="love-time-unit"><span id="l-days">0</span><span>天</span></div>
+                        <div class="love-time-unit"><span id="l-hours">0</span><span>时</span></div>
+                        <div class="love-time-unit"><span id="l-minutes">0</span><span>分</span></div>
+                        <div class="love-time-unit"><span id="l-seconds">0</span><span>秒</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="progress-section">
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" id="progressBar"></div>
+                </div>
+                <div class="progress-text" id="progressText">距离橡树婚纪念日：0%</div>
+            </div>
+        </div>
+
+        <!-- 右侧面板：时间轴+诗词整块居中于右半栏 -->
+        <div class="right-panel">
+            <div class="poem-wrap">
+                <div class="timeline-line" id="timelineLine"></div>
+
+                <!-- 忆往昔（范成大 完整版） -->
+                <div class="chapter-card" id="card1">
+                    <div class="timeline-dot"></div>
+                    <div class="chapter-title">忆 往 昔</div>
+                    <div class="typewriter-text" id="tw1"></div>
+                </div>
+
+                <!-- 共朝暮（冯延巳 春日宴 完整版） -->
+                <div class="chapter-card" id="card2">
+                    <div class="timeline-dot"></div>
+                    <div class="chapter-title">共 朝 暮</div>
+                    <div class="typewriter-text" id="tw2"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ================= 时间计算 =================
+        // 恋爱纪念日：2018-01-13 16:00（下午四点）；结婚纪念日：2025-10-01 09:00（上午九点）
+        // 用本地时间构造，保证每天打开页面时按当天此刻精确计算
+        const LOVE_START_DATE = new Date(2018, 0, 13, 16, 0, 0);
+        const MARRY_START_DATE = new Date(2025, 9, 1, 9, 0, 0);
+        const OAK_JUBILEE_YEARS = 80; // 橡树婚 = 结婚 80 周年
+
+        function updateTimers() {
+            const now = new Date(); 
+            let loveDiff = now - LOVE_START_DATE;
+            if (loveDiff < 0) loveDiff = 0;
+            const lDays = Math.floor(loveDiff / (1000 * 60 * 60 * 24));
+            const lHours = Math.floor((loveDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const lMinutes = Math.floor((loveDiff % (1000 * 60 * 60)) / (1000 * 60));
+            const lSeconds = Math.floor((loveDiff % (1000 * 60)) / 1000);
+
+            document.getElementById('l-days').innerText = lDays;
+            document.getElementById('l-hours').innerText = lHours;
+            document.getElementById('l-minutes').innerText = lMinutes;
+            document.getElementById('l-seconds').innerText = lSeconds;
+
+            let marryDiff = now - MARRY_START_DATE;
+            const marryTitleEl = document.getElementById('marryTitle');
+            
+            if (marryDiff < 0) {
+                marryDiff = Math.abs(marryDiff);
+                marryTitleEl.innerText = "距离步入婚姻殿堂还有";
+            } else {
+                marryTitleEl.innerText = "🤵 我们已携手步入婚姻 👰";
+            }
+
+            const mDays = Math.floor(marryDiff / (1000 * 60 * 60 * 24));
+            const mHours = Math.floor((marryDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const mMinutes = Math.floor((marryDiff % (1000 * 60 * 60)) / (1000 * 60));
+            const mSeconds = Math.floor((marryDiff % (1000 * 60)) / 1000);
+
+            document.getElementById('m-days').innerText = mDays;
+            document.getElementById('m-hours').innerText = mHours;
+            document.getElementById('m-minutes').innerText = mMinutes;
+            document.getElementById('m-seconds').innerText = mSeconds;
+
+            const oakDate = new Date(MARRY_START_DATE);
+            oakDate.setFullYear(oakDate.getFullYear() + OAK_JUBILEE_YEARS);
+            const totalMarriedTime = oakDate - MARRY_START_DATE;
+            const currentMarriedTime = now - MARRY_START_DATE;
+            let progress = (currentMarriedTime / totalMarriedTime) * 100;
+            if (progress < 0) progress = 0;
+            if (progress > 100) progress = 100;
+
+            // 剩余时长（年 + 天 + 时分秒，按日历精确计算，跨闰年也不偏）
+            const DAY = 24 * 60 * 60 * 1000;
+            const remaining = oakDate - now;
+            let remainingText;
+            if (remaining <= 0) {
+                remainingText = '已携手走过80年橡树婚纪念日';
+            } else {
+                // 今年若已过橡树婚当天的时刻，完整年份数少一年
+                const thisYearsOak = new Date(now.getFullYear(), oakDate.getMonth(), oakDate.getDate());
+                let yearsLeft = oakDate.getFullYear() - now.getFullYear();
+                if (thisYearsOak - now <= 0) yearsLeft--;
+
+                const afterYears = new Date(now.getTime());
+                afterYears.setFullYear(now.getFullYear() + yearsLeft);
+                const rest = Math.max(0, oakDate - afterYears);
+                const daysLeft = Math.floor(rest / DAY);
+                const hoursLeft = Math.floor((rest % DAY) / (60 * 60 * 1000));
+                const minutesLeft = Math.floor((rest % (60 * 60 * 1000)) / (60 * 1000));
+                const secondsLeft = Math.floor((rest % (60 * 1000)) / 1000);
+                remainingText = `还有 ${yearsLeft}年 ${daysLeft}天 ${hoursLeft}时 ${minutesLeft}分 ${secondsLeft}秒`;
+            }
+
+            document.getElementById('progressBar').style.width = progress + '%';
+            document.getElementById('progressText').innerText = `距离橡树婚纪念日${remainingText}，已完成 ${progress.toFixed(6)}%`;
+        }
+
+        updateTimers();
+        setInterval(updateTimers, 1000);
+
+        // ================= 顺序打字机效果 (光标绝对跟随版) =================
+        const typewriters = [
+            { 
+                cardId: 'card1', id: 'tw1', 
+                content: "车遥遥，马憧憧。\n君游东山东复东，\n安得奋飞逐西风。\n愿我如星君如月，\n夜夜流光相皎洁。\n月暂晦，日常明。\n留明待月复，三五共盈盈。", 
+                speed: 65, charIndex: 0 
+            },
+            { 
+                cardId: 'card2', id: 'tw2', 
+                content: "春日宴，绿酒一杯歌一遍。\n再拜陈三愿：\n一愿爱妻千岁，\n二愿夫身常健，\n三愿如同梁上燕，\n岁岁长相见。", 
+                speed: 65, charIndex: 0 
+            }
+        ];
+
+        let currentTwIndex = 0;
+
+        // 竖线起点 = 第一个已显示圆点的中心（避免圆点上方露出多余线头），
+        // 终点 = 所有已显示章节中「圆点中心」与「已打出诗行底部」较远者，
+        // 每次打字后重算，线条便随诗行逐行生长
+        function updateTimelineHeight() {
+            const timelineLine = document.getElementById('timelineLine');
+            const lineHeight = parseFloat(getComputedStyle(document.querySelector('.typewriter-text')).lineHeight) || 0;
+            let startY = Infinity;
+            let endY = 0;
+
+            for (const tw of typewriters) {
+                const card = document.getElementById(tw.cardId);
+                if (!card.classList.contains('visible')) continue;
+
+                const dot = card.querySelector('.timeline-dot');
+                const dotCenterY = card.offsetTop + dot.offsetTop + dot.offsetHeight / 2;
+
+                startY = Math.min(startY, dotCenterY);
+
+                const textEl = document.getElementById(tw.id);
+                const lineCount = textEl.innerHTML === '' ? 0 : textEl.innerHTML.split('<br>').length;
+                const typedBottomY = card.offsetTop + textEl.offsetTop + lineCount * lineHeight;
+
+                endY = Math.max(endY, dotCenterY, typedBottomY);
+            }
+
+            if (startY === Infinity) {
+                startY = 0;
+                endY = 0;
+            }
+            timelineLine.style.top = startY + 'px';
+            timelineLine.style.height = Math.max(0, endY - startY) + 'px';
+        }
+
+        function runNextTypewriter() {
+            if (currentTwIndex >= typewriters.length) return;
+
+            const tw = typewriters[currentTwIndex];
+            const card = document.getElementById(tw.cardId);
+            const textElement = document.getElementById(tw.id);
+
+            // 激活当前卡片
+            card.classList.add('visible', 'active');
+
+            // 先把线伸到本卡片的圆点位置
+            updateTimelineHeight();
+
+            function typeChar() {
+                const currentText = tw.content.substring(0, tw.charIndex);
+                // 用全角空格把正在打的一行补齐到整行宽度，居中排版时文字不会左右抖动
+                const fullLines = tw.content.split('\n');
+                const typedLines = currentText.split('\n');
+                const lineMax = fullLines[typedLines.length - 1].length;
+                const lineTyped = typedLines[typedLines.length - 1].length;
+                const pad = '\u3000'.repeat(Math.max(0, lineMax - lineTyped));
+                const htmlContent = currentText.replace(/\n/g, '<br>')
+                    + '<span class="cursor-char"></span>'
+                    + (pad ? '<span class="tw-pad">' + pad + '</span>' : '');
+                
+                textElement.innerHTML = htmlContent;
+
+                // 每打出一个字就重算一次线长：新行出现时线条随之伸长
+                updateTimelineHeight();
+
+                tw.charIndex++;
+
+                if (tw.charIndex > tw.content.length) {
+                    // 打完了，移除光标
+                    textElement.innerHTML = tw.content.replace(/\n/g, '<br>');
+                    currentTwIndex++;
+                    setTimeout(runNextTypewriter, 1000);
+                    return;
+                }
+
+                let speed = tw.speed;
+                const lastChar = tw.content.charAt(tw.charIndex - 1);
+                if (lastChar === '，' || lastChar === '。' || lastChar === ',' || lastChar === '.' || lastChar === '?' || lastChar === '\n') {
+                    speed *= 2;
+                }
+                
+                setTimeout(typeChar, speed);
+            }
+
+            setTimeout(typeChar, 250);
+        }
+
+        // 打开页面后尽快展示第一首标题与正文（原为 2000ms）
+        setTimeout(runNextTypewriter, 400);
+
+        // ================= 星空背景 =================
+        const canvas = document.getElementById('starfield');
+        const ctx = canvas.getContext('2d');
+        let stars = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            generateStars();
+        }
+
+        function generateStars() {
+            stars = [];
+            const count = Math.floor((canvas.width * canvas.height) / 5000);
+            for (let i = 0; i < count; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    radius: Math.random() * 1.2,
+                    alpha: Math.random(),
+                    speed: Math.random() * 0.005 + 0.005
+                });
+            }
+        }
+
+        function drawStars() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            stars.forEach(star => {
+                star.alpha += star.speed;
+                if (star.alpha > 1 || star.alpha < 0) star.speed = -star.speed;
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 255, 255, ${Math.abs(star.alpha)})`;
+                ctx.fill();
+            });
+            requestAnimationFrame(drawStars);
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+        drawStars();
+
+        // 窗口尺寸变化导致布局重排后，重新对齐竖线终点
+        window.addEventListener('resize', () => {
+            if (document.querySelector('.chapter-card.visible')) updateTimelineHeight();
+        });
+    </script>
+</body>
+</html>
